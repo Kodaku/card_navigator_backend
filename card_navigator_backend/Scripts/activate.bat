@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=E:\CardNavigator\card_navigator_backend\card_navigator_backend
+set VIRTUAL_ENV=C:\Users\axel\Desktop\Repo\CardNavigator\card_navigator_backend\card_navigator_backend
 
 if not defined PROMPT set PROMPT=$P$G
 
