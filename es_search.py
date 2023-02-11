@@ -35,12 +35,12 @@ def find_all(es, index_name):
     return records
 
 
-def find_by_name(es, index_name, expansion_name):
+def find_by_name(es, index_name, field, value):
     match_all = {
         "size": 20,
         "query": {
             "match": {
-                "expansion_full_name": expansion_name
+                field: value
             }
         }
     }
