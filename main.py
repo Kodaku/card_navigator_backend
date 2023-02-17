@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from elasticsearch import Elasticsearch, RequestError
 from es_search import find_all, find_by_name
 from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
 
 
 class Card(BaseModel):
@@ -20,7 +21,7 @@ class WishList(BaseModel):
 
 es = Elasticsearch(
     hosts=['http://localhost:9200'],
-    basic_auth=('elastic', 'e0_kX+xT1Oh_v+8pLot3')
+    basic_auth=('elastic', 'Cj-ChuXcllkRQF8t8VFa')
 )
 
 
@@ -78,6 +79,7 @@ async def create_wish_list(wish_list: WishList):
     actions.append(doc)
     res = es.bulk(index="wish-lists", operations=actions)
     print(res)
+    return wish_list
 
 
 @app.post("/wish-lists/cards/{list_name}")
@@ -94,6 +96,7 @@ async def add_card_to_wish_list(list_name: str, card: Card):
     actions.append(doc)
     res = es.bulk(index="wish-lists", operations=actions)
     print(res)
+    return find_by_name(es, "wish-lists", "wish_list_name", list_name)
 
 
 @app.get("/wish-lists")
@@ -110,17 +113,19 @@ async def find_wish_list_by_name(list_name: str):
     return wish_list
 
 
-@app.delete("/wish-lists/{list_name}")
+@app.get("/wish-lists/delete/{list_name}")
 async def delete_wish_list_by_name(list_name: str):
     es.delete(index="wish-lists", id=list_name)
+    return {"msg": "Deleted"}
 
 
-@app.delete("/wish-lists/{list_name}/{card_name}")
+@app.get("/wish-lists/delete/card/{list_name}/{card_name}")
 async def delete_card_from_list(list_name: str, card_name: str):
     wish_list = find_by_name(es, "wish-lists", "wish_list_name", list_name)
     cards = wish_list['cards']
     for card in cards:
         if card["card_name"] == card_name:
+            print(card)
             cards.remove(card)
             break
     actions = []
@@ -131,3 +136,15 @@ async def delete_card_from_list(list_name: str, card_name: str):
     actions.append(doc)
     res = es.bulk(index="wish-lists", operations=actions)
     print(res)
+    return find_by_name(es, "wish-lists", "wish_list_name", list_name)
+
+
+@app.get("/wish-lists/export/to-csv/{list_name}")
+async def export_wish_list_as_csv(list_name: str):
+    wish_list = find_by_name(es, "wish-lists", "wish_list_name", list_name)
+    cards = wish_list['cards']
+    exportable_cards = []
+    for card in cards:
+        exportable_cards.append([card["card_name"], card["quantity"]])
+    exportable_cards_df = pd.DataFrame(exportable_cards, columns=["card_name", "quantity"])
+    exportable_cards_df.to_csv(f"{list_name}.csv")
